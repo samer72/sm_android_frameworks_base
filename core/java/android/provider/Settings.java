@@ -2271,6 +2271,24 @@ public final class Settings {
         public static final String LOCKSCREEN_DPAD_MUSIC_CONTROLS = "dpad_music_controls";
 
         /**
+         * Whether to show currently playing song title and artist
+         * @hide
+         */
+        public static final String LOCKSCREEN_NOW_PLAYING = "lockscreen_now_playing";
+
+        /**
+         * Whether to show currently playing song album art
+         * @hide
+         */
+        public static final String LOCKSCREEN_ALBUM_ART = "lockscreen_album_art";
+
+        /**
+         * Whether to always show lockscreen battery info
+         * @hide
+         */
+        public static final String LOCKSCREEN_ALWAYS_BATTERY_INFO = "lockscreen_always_battery_info";
+
+        /**
          * Whether to use the custom quick unlock screen control
          * @hide
          */
@@ -2278,22 +2296,48 @@ public final class Settings {
             "lockscreen_quick_unlock_control";
 
         /**
-         * Whether to use the custom Phone and Messaging SlidingTab
+         * Whether to use the custom app on both slider style and rotary style
          * @hide
          */
-        public static final String LOCKSCREEN_PHONE_MESSAGING_TAB = "lockscreen_phone_messaging_tab";
+        public static final String LOCKSCREEN_CUSTOM_APP_TOGGLE = "lockscreen_custom_app_toggle";
 
         /**
-         * App to launch with the custom messaging tab
+         * App to launch with custom app toggle enabled
          * @hide
          */
-        public static final String LOCKSCREEN_MESSAGING_TAB_APP = "lockscreen_messaging_tab_app";
+        public static final String LOCKSCREEN_CUSTOM_APP_ACTIVITY = "lockscreen_custom_app_activity";
 
         /**
-         * Sets the lockscreen style
+         * Title to use for custom app on slider
          * @hide
          */
-        public static final String LOCKSCREEN_STYLE_PREF = "lockscreen_style_pref";
+        public static final String LOCKSCREEN_CUSTOM_APP_TITLE = "lockscreen_custom_app_title";
+
+        /**
+         * 1: Show custom app icon (currently cm logo) as with new patch
+         * 2: Show messaging app icon as in old lockscreen
+         * possibly more in the future (if more png files are drawn)
+         * @hide
+         */
+        public static final String LOCKSCREEN_CUSTOM_ICON_STYLE = "lockscreen_custom_icon_style";
+
+        /**
+         * When enabled, rotary lockscreen switches app starter and unlock, so you can drag down to unlock
+         * @hide
+         */
+        public static final String LOCKSCREEN_ROTARY_UNLOCK_DOWN = "lockscreen_rotary_unlock_down";
+
+        /**
+         * When enabled, directional hint arrows are supressed
+         * @hide
+         */
+        public static final String LOCKSCREEN_ROTARY_HIDE_ARROWS = "lockscreen_rotary_hide_arrows";
+
+        /**
+         * Sets the lockscreen mode
+         * @hide
+         */
+        public static final String LOCKSCREEN_MODE = "lockscreen_mode";
 
         /**
          * Whether to use a custom pull-down notification screen
@@ -2318,12 +2362,6 @@ public final class Settings {
          * @hide
          */
         public static final String EXPANDED_HIDE_ONCHANGE = "expanded_hide_onchange";
-
-        /**
-         * Notification Indicator Color
-         * @hide
-         */
-        public static final String EXPANDED_VIEW_WIDGET_COLOR = "expanded_widget_color";
 
         /**
          * Widget Buttons to Use
@@ -2357,6 +2395,24 @@ public final class Settings {
          * @hide
          */
         public static final String LOCK_MMS_IN_MEMORY = "lock_mms_in_memory";
+
+        /**
+         * Whether to keep the messaging app at a higher OOM adjustement
+         * @hide
+         */
+        public static final String LOCK_PHONE_IN_MEMORY = "lock_phone_in_memory";
+
+        /**
+         * Whether to keep the messaging app at a higher OOM adjustement
+         * @hide
+         */
+        public static final String LOCK_CONTACTS_IN_MEMORY = "lock_contacts_in_memory";
+
+        /**
+         * Whether to keep the messaging app at a higher OOM adjustement
+         * @hide
+         */
+        public static final String LOCK_SUPERUSER_IN_MEMORY = "lock_superuser_in_memory";
 
         /**
          * HDPI Devices only:  Align battery percentage text in status bar icon  right (0), left (1), center (2)
@@ -4236,7 +4292,7 @@ public final class Settings {
          * Whether to disable the lockscreen unlock tab
          * @hide
          */
-        public static final String LOCKSCREEN_GESTURES_DISABLE_UNLOCK = "lockscreen_gestures_disable_unlock";
+        public static final String LOCKSCREEN_DISABLE_UNLOCK = "lockscreen_disable_unlock";
 
         /**
          * @hide

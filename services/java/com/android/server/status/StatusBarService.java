@@ -100,7 +100,6 @@ import com.android.server.status.widget.NetworkModeButton;
 import com.android.server.status.widget.LockScreenButton;
 import com.android.server.status.widget.AutoRotateButton;
 import com.android.server.status.widget.AirplaneButton;
-import com.android.server.status.widget.FlashlightButton;
 import com.android.server.status.widget.SleepButton;
 
 /**
@@ -2087,7 +2086,7 @@ public class StatusBarService extends IStatusBar.Stub
                                 Settings.System.WIDGET_BUTTONS);
         Log.i("setupPowerWidget", "List: "+lists);
         if(lists == null) {
-            lists = "toggleWifi|toggleBluetooth|toggleGPS|toggleSound";
+            lists = "toggleWifi|toggleBluetooth|toggleGPS|toggleBrightness|toggleMobileData";
         }
         List<String> list = Arrays.asList(lists.split("\\|"));
         clearWidget();
@@ -2136,8 +2135,6 @@ public class StatusBarService extends IStatusBar.Stub
             btn = AutoRotateButton.getInstance();
         } else if(PowerButton.TOGGLE_AIRPLANE.equals(buttonType)) {
             btn = AirplaneButton.getInstance();
-        } else if(PowerButton.TOGGLE_FLASHLIGHT.equals(buttonType)) {
-            btn = FlashlightButton.getInstance();
         } else if(PowerButton.TOGGLE_SLEEPMODE.equals(buttonType)) {
             btn = SleepButton.getInstance();
         }
@@ -2150,7 +2147,7 @@ public class StatusBarService extends IStatusBar.Stub
     }
 
     private void clearWidget() {
-        for(int posi = 0; posi < 6; posi++) {
+        for(int posi = 0; posi < 14; posi++) {
             LinearLayout layout = (LinearLayout)mExpandedView.findViewById(PowerButton.getLayoutID(posi + 1));
             layout.setVisibility(View.GONE);
             layout.setTag("");

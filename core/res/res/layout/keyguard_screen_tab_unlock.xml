@@ -74,7 +74,7 @@
             android:layout_below="@id/carrier"
             android:layout_marginTop="32dip"
             android:layout_marginLeft="20dip"
-            android:paddingBottom="8dip"
+            android:paddingBottom="2dip"
             >
 
             <TextView android:id="@+id/timeDisplay"
@@ -88,7 +88,7 @@
                 android:shadowDx="0"
                 android:shadowDy="0"
                 android:shadowRadius="3.0"
-                android:layout_marginBottom="10dip"
+                android:layout_marginBottom="2dip"
                 />
 
             <TextView android:id="@+id/am_pm"
@@ -161,6 +161,21 @@
             android:drawablePadding="4dip"
             />
 
+        <!-- album art -->
+        <ImageButton android:id="@+id/albumArt"
+            android:layout_width="125dip"
+            android:layout_height="125dip"
+            android:layout_below="@+id/musicNowPlaying"
+            android:layout_centerInParent="true"
+            android:layout_marginTop="40dip"
+            android:layout_marginBottom="5dip"
+            android:adjustViewBounds="true"
+            android:background="@color/transparent"
+            android:scaleType="fitCenter"
+            android:padding = "5px"
+            android:visibility="gone"
+            />
+
         <com.android.internal.widget.SlidingTab
             android:id="@+id/tab_selector2"
             android:orientation="horizontal"
@@ -185,7 +200,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:layout_marginBottom="60dip"
+            android:layout_marginBottom="20dip"
             />
 
         <!-- emergency call button shown when sim is PUKd and tab_selector is
@@ -251,6 +266,19 @@
             android:layout_toRightOf="@+id/musicControlPause"
             android:background="@color/transparent"
             android:visibility="gone"
+            />
+        <TextView
+            android:id="@+id/musicNowPlaying"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:lines="1"
+            android:scrollHorizontally="true"
+            android:ellipsize="marquee"
+            android:paddingTop="10dip"
+            android:gravity="bottom"
+            android:layout_alignWithParentIfMissing="true"
+            android:textAppearance="?android:attr/textAppearanceMedium"
             />
     </RelativeLayout>
 </android.gesture.GestureOverlayView>
