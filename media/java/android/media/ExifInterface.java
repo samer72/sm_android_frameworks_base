@@ -285,7 +285,7 @@ public class ExifInterface {
             return true;
         } else {
             return false;
-        }
+	}
     }
 
     /**

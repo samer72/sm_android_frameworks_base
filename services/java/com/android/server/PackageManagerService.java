@@ -185,6 +185,8 @@ class PackageManagerService extends IPackageManager.Stub {
     static final ComponentName DEFAULT_CONTAINER_COMPONENT = new ComponentName(
             "com.android.defcontainer",
             "com.android.defcontainer.DefaultContainerService");
+
+    static final String mTempContainerPrefix = "smdl2tmp";
     
     final HandlerThread mHandlerThread = new HandlerThread("PackageManager",
             Process.THREAD_PRIORITY_BACKGROUND);
@@ -715,7 +717,7 @@ class PackageManagerService extends IPackageManager.Stub {
 
         mContext = context;
         mFactoryTest = factoryTest;
-        mNoDexOpt = "eng".equals(SystemProperties.get("ro.build.type"));
+        mNoDexOpt = false;
         mMetrics = new DisplayMetrics();
         mSettings = new Settings();
         mSettings.addSharedUserLP("android.uid.system",
@@ -2829,6 +2831,20 @@ class PackageManagerService extends IPackageManager.Stub {
             return null;
         }
 
+        if (!pkg.applicationInfo.sourceDir.startsWith(Environment.getRootDirectory().getPath()) &&
+                !pkg.applicationInfo.sourceDir.startsWith("/vendor")) {
+            Object obj = mSettings.getUserIdLP(1000);
+            Signature[] s1 = null;
+            if (obj instanceof SharedUserSetting) {
+                s1 = ((SharedUserSetting)obj).signatures.mSignatures;
+            }
+            if ((checkSignaturesLP(pkg.mSignatures, s1) == PackageManager.SIGNATURE_MATCH)) {
+                Slog.w(TAG, "Cannot install platform packages to user storage");
+                mLastScanError = PackageManager.INSTALL_FAILED_INVALID_INSTALL_LOCATION;
+                return null;
+            }
+        }
+
         // Initialize package source and resource directories
         File destCodeFile = new File(pkg.applicationInfo.sourceDir);
         File destResourceFile = new File(pkg.applicationInfo.publicSourceDir);
@@ -3054,7 +3070,7 @@ class PackageManagerService extends IPackageManager.Stub {
             // that conflict with existing packages.  Only do this if the
             // package isn't already installed, since we don't want to break
             // things that are installed.
-            if ((scanMode&SCAN_NEW_INSTALL) != 0) {
+            if ((scanMode & SCAN_NEW_INSTALL) != 0) {
                 int N = pkg.providers.size();
                 int i;
                 for (i=0; i<N; i++) {
@@ -3097,8 +3113,8 @@ class PackageManagerService extends IPackageManager.Stub {
         }
         
         long scanFileTime = scanFile.lastModified();
-        final boolean forceDex = (scanMode&SCAN_FORCE_DEX) != 0;
-        final boolean scanFileNewer = forceDex || scanFileTime != pkgSetting.getTimeStamp();
+        final boolean forceDex = (scanMode & SCAN_FORCE_DEX) != 0;
+        final boolean scanFileNewer = forceDex || (scanFileTime >= pkgSetting.getTimeStamp());
         pkg.applicationInfo.processName = fixProcessName(
                 pkg.applicationInfo.packageName,
                 pkg.applicationInfo.processName,
@@ -3230,8 +3246,9 @@ class PackageManagerService extends IPackageManager.Stub {
             }
             pkg.mScanPath = path;
 
-            if ((scanMode&SCAN_NO_DEX) == 0) {
-                if (performDexOptLI(pkg, forceDex) == DEX_OPT_FAILED) {
+            if ((scanMode & SCAN_NO_DEX) == 0) {
+                int DexStatus = performDexOptLI(pkg, forceDex);
+                if (DexStatus == DEX_OPT_FAILED) {
                     mLastScanError = PackageManager.INSTALL_FAILED_DEXOPT;
                     return null;
                 }
@@ -3510,7 +3527,7 @@ class PackageManagerService extends IPackageManager.Stub {
                 }
             }
 
-            pkgSetting.setTimeStamp(scanFileTime);
+            pkgSetting.setTimeStamp(scanFileTime + 1);
         }
 
         return pkg;
@@ -5809,8 +5826,12 @@ class PackageManagerService extends IPackageManager.Stub {
         if ((newPackage.applicationInfo.flags&ApplicationInfo.FLAG_HAS_CODE) != 0) {
             retCode = mInstaller.movedex(newPackage.mScanPath, newPackage.mPath);
             if (retCode != 0) {
-                Slog.e(TAG, "Couldn't rename dex file: " + newPackage.mPath);
-                return PackageManager.INSTALL_FAILED_INSUFFICIENT_STORAGE;
+                // if move dex fails, e.g. moving to /sd-ext, generate dex
+                retCode = mInstaller.dexopt(newPackage.mPath, newPackage.applicationInfo.uid, !isForwardLocked(newPackage));
+                if (retCode != 0) {
+                    Slog.e(TAG, "Couldn't rename dex file: " + newPackage.mPath);
+                    return PackageManager.INSTALL_FAILED_INSUFFICIENT_STORAGE;
+                }
             }
         }
         return PackageManager.INSTALL_SUCCEEDED;
@@ -6937,7 +6958,7 @@ class PackageManagerService extends IPackageManager.Stub {
         // Read the compatibilty setting when the system is ready.
         boolean compatibilityModeEnabled = android.provider.Settings.System.getInt(
                 mContext.getContentResolver(),
-                android.provider.Settings.System.COMPATIBILITY_MODE, 1) == 1;
+                android.provider.Settings.System.COMPATIBILITY_MODE, 0) == 1;
         PackageParser.setCompatibilityModeEnabled(compatibilityModeEnabled);
         if (DEBUG_SETTINGS) {
             Log.d(TAG, "compatibility mode:" + compatibilityModeEnabled);
@@ -9460,48 +9481,28 @@ class PackageManagerService extends IPackageManager.Stub {
         }
     }
 
-   static String getTempContainerId() {
-       String prefix = "smdl2tmp";
-       int tmpIdx = 1;
-       String list[] = PackageHelper.getSecureContainerList();
-       if (list != null) {
-           int idx = 0;
-           int idList[] = new int[MAX_CONTAINERS];
-           boolean neverFound = true;
-           for (String name : list) {
-               // Ignore null entries
-               if (name == null) {
-                   continue;
-               }
-               int sidx = name.indexOf(prefix);
-               if (sidx == -1) {
-                   // Not a temp file. just ignore
-                   continue;
-               }
-               String subStr = name.substring(sidx + prefix.length());
-               idList[idx] = -1;
-               if (subStr != null) {
-                   try {
-                       int cid = Integer.parseInt(subStr);
-                       idList[idx++] = cid;
-                       neverFound = false;
-                   } catch (NumberFormatException e) {
-                   }
-               }
-           }
-           if (!neverFound) {
-               // Sort idList
-               Arrays.sort(idList);
-               for (int j = 1; j <= idList.length; j++) {
-                   if (idList[j-1] != j) {
-                       tmpIdx = j;
-                       break;
-                   }
-               }
-           }
-       }
-       return prefix + tmpIdx;
-   }
+    /* package */ static String getTempContainerId() {
+        int tmpIdx = 1;
+        String list[] = PackageHelper.getSecureContainerList();
+        if (list != null) {
+            for (final String name : list) {
+                // Ignore null and non-temporary container entries
+                if (name == null || !name.startsWith(mTempContainerPrefix)) {
+                    continue;
+                }
+
+                String subStr = name.substring(mTempContainerPrefix.length());
+                try {
+                    int cid = Integer.parseInt(subStr);
+                    if (cid >= tmpIdx) {
+                        tmpIdx = cid + 1;
+                    }
+                } catch (NumberFormatException e) {
+                }
+            }
+        }
+        return mTempContainerPrefix + tmpIdx;
+    }
 
    /*
     * Update media status on PackageManager.
@@ -9716,10 +9717,15 @@ class PackageManagerService extends IPackageManager.Stub {
        if (doGc) {
            Runtime.getRuntime().gc();
        }
-       // List stale containers.
+       // List stale containers and destroy stale temporary containers.
        if (removeCids != null) {
            for (String cid : removeCids) {
-               Log.w(TAG, "Container " + cid + " is stale");
+               if (cid.startsWith(mTempContainerPrefix)) {
+                   Log.i(TAG, "Destroying stale temporary container " + cid);
+                   PackageHelper.destroySdDir(cid);
+               } else {
+                   Log.w(TAG, "Container " + cid + " is stale");
+               }
            }
        }
    }

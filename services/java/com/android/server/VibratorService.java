@@ -291,6 +291,14 @@ public class VibratorService extends IVibratorService.Stub {
         return null;
     }
 
+    private void unlinkVibration(Vibration vib) {
+        if (vib.mPattern != null) {
+            // If Vibration object has a pattern,
+            // the Vibration object has also been linkedToDeath.
+            vib.mToken.unlinkToDeath(vib, 0);
+        }
+    }
+
     private class VibrateThread extends Thread {
         final Vibration mVibration;
         boolean mDone;
@@ -302,8 +310,8 @@ public class VibratorService extends IVibratorService.Stub {
 
         private void delay(long duration) {
             if (duration > 0) {
-                long bedtime = SystemClock.uptimeMillis();
                 do {
+                    long bedtime = SystemClock.uptimeMillis();
                     try {
                         this.wait(duration);
                     }
@@ -313,7 +321,7 @@ public class VibratorService extends IVibratorService.Stub {
                         break;
                     }
                     duration = duration
-                            - SystemClock.uptimeMillis() - bedtime;
+                            - (SystemClock.uptimeMillis() - bedtime);
                 } while (duration > 0);
             }
         }
@@ -376,6 +384,12 @@ public class VibratorService extends IVibratorService.Stub {
             if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF)) {
                 synchronized (mVibrations) {
                     doCancelVibrateLocked();
+
+                    int size = mVibrations.size();
+                    for(int i = 0; i < size; i++) {
+                        unlinkVibration(mVibrations.get(i));
+                    }
+
                     mVibrations.clear();
                 }
             }

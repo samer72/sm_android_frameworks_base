@@ -145,6 +145,16 @@
     <string name="recent_tasks_title" msgid="3691764623638127888">"Zuletzt verwendet"</string>
     <string name="no_recent_tasks" msgid="279702952298056674">"Keine zuletzt verwendeten Anwendungen"</string>
     <string name="global_actions" msgid="2406416831541615258">"Telefonoptionen"</string>
+
+    <!-- label for item that emulates the hardware button: home -->
+    <string name="global_action_home">Home</string>
+
+    <!-- label for item that emulates the hardware button: menu -->
+    <string name="global_action_menu">Menü</string>
+
+    <!-- label for item that emulates the hardware button: back -->
+    <string name="global_action_back">Zurück</string>
+
     <string name="global_action_lock" msgid="2844945191792119712">"Display-Sperre"</string>
     <string name="global_action_power_off" msgid="4471879440839879722">"Ausschalten"</string>
 
@@ -771,7 +781,7 @@
     <string name="ringtone_default" msgid="3789758980357696936">"Standard-Klingelton"</string>
     <string name="ringtone_default_with_actual" msgid="8129563480895990372">"Standard-Klingelton (<xliff:g id="ACTUAL_RINGTONE">%1$s</xliff:g>)"</string>
     <string name="ringtone_silent" msgid="4440324407807468713">"Lautlos"</string>
-    <string name="ringtone_picker_title" msgid="3515143939175119094">"Klingeltöne"</string>
+    <string name="ringtone_picker_title" msgid="3515143939175119094">"Ton auswählen"</string>
     <string name="ringtone_unknown" msgid="5477919988701784788">"Unbekannter Klingelton"</string>
   <plurals name="wifi_available">
     <item quantity="one" msgid="6654123987418168693">"WLAN-Netzwerk verfügbar"</item>

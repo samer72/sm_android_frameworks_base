@@ -19,6 +19,7 @@ package com.android.server;
 import com.android.internal.app.IBatteryStats;
 import com.android.internal.app.ShutdownThread;
 import com.android.server.am.BatteryStatsService;
+import com.android.server.AttributeCache;
 
 import android.app.ActivityManagerNative;
 import android.app.IActivityManager;
@@ -50,6 +51,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.provider.Settings.SettingNotFoundException;
 import android.provider.Settings;
 import android.util.EventLog;
@@ -243,6 +245,9 @@ class PowerManagerService extends IPowerManager.Stub
     private static final boolean mSpew = false;
     private static final boolean mDebugProximitySensor = (true || mSpew);
     private static final boolean mDebugLightSensor = (false || mSpew);
+    
+    private native void nativeInit();
+    private native void nativeSetPowerState(boolean screenOn, boolean screenBright);
 
     /*
     static PrintStream mLog;
@@ -350,7 +355,7 @@ class PowerManagerService extends IPowerManager.Stub
                     // temporarily set mUserActivityAllowed to true so this will work
                     // even when the keyguard is on.
                     synchronized (mLocks) {
-                        if (!wasPowered || (mPowerState & SCREEN_ON_BIT) != 0) {
+                        if (!SystemProperties.get("ro.config.no_action_on_plug").equals("1") && (!wasPowered || (mPowerState & SCREEN_ON_BIT) != 0)) {
                             forceUserActivityLocked();
                         }
                     }
@@ -471,6 +476,11 @@ class PowerManagerService extends IPowerManager.Stub
                     // Ignore
                 }
             }
+        }
+        
+        nativeInit();
+        synchronized (mLocks) {
+            updateNativePowerStateLocked();
         }
     }
 
@@ -1447,6 +1457,12 @@ class PowerManagerService extends IPowerManager.Stub
                     mLightSensorValue = -1;
                     // reset our highest light sensor value when the screen turns off
                     mHighestLightSensorValue = -1;
+		    // clear AttributeCache on screenOff to keep system_server ram usage low
+		    AttributeCache ac = AttributeCache.instance();
+                    if (ac != null) {
+                        ac.clearCache();
+                        Slog.w(TAG, "AttributeCache cleared");
+                    }
                 }
             }
         }
@@ -1589,7 +1605,15 @@ class PowerManagerService extends IPowerManager.Stub
                     }
                 }
             }
+            
+            updateNativePowerStateLocked();
         }
+    }
+    
+    private void updateNativePowerStateLocked() {
+        nativeSetPowerState(
+                (mPowerState & SCREEN_ON_BIT) != 0,
+                (mPowerState & SCREEN_BRIGHT) == SCREEN_BRIGHT);
     }
 
     private int screenOffFinishedAnimatingLocked(int reason) {
@@ -1897,7 +1921,6 @@ class PowerManagerService extends IPowerManager.Stub
     private class LightAnimator implements Runnable {
         public void run() {
             synchronized (mLocks) {
-                long now = SystemClock.uptimeMillis();
                 boolean more = mScreenBrightness.stepLocked();
                 if (mKeyboardBrightness.stepLocked()) {
                     more = true;
@@ -1906,7 +1929,7 @@ class PowerManagerService extends IPowerManager.Stub
                     more = true;
                 }
                 if (more) {
-                    mHandler.postAtTime(mLightAnimator, now+(1000/60));
+                    mHandler.postDelayed(mLightAnimator, 1000/60);
                 }
             }
         }

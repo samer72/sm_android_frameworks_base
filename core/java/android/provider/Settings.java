@@ -2882,10 +2882,16 @@ public final class Settings {
         public static final String ADB_ENABLED = "adb_enabled";
 
         /**
-         * Whether to show ADB notifications.
+         * Whether or not to show ADB notifications.
          * @hide
          */
         public static final String ADB_NOTIFY = "adb_notify";
+
+	/**
+         * Whether Compcache is eanbled.
+	 * @hide
+         */
+        public static final String COMPCACHE_ENABLED = "compcache_enabled";
 
         /**
          * Setting to allow mock locations and location provider status to be injected into the
@@ -2923,6 +2929,14 @@ public final class Settings {
          */
         public static final String getBluetoothA2dpSinkPriorityKey(String address) {
             return ("bluetooth_a2dp_sink_priority_" + address.toUpperCase());
+        }
+
+	/**
+         * Get the key that retrieves a bluetooth hid device's priority.
+         * @hide
+         */
+        public static final String getBluetoothHidDevicePriorityKey(String address) {
+            return ("bluetooth_hid_device_priority_" + address.toUpperCase());
         }
 
         /**
@@ -4282,7 +4296,7 @@ public final class Settings {
                 while (intent == null && c.moveToNext()) {
                     try {
                         String intentURI = c.getString(c.getColumnIndexOrThrow(INTENT));
-                        intent = Intent.getIntent(intentURI);
+                        intent = Intent.parseUri(intentURI, 0);
                     } catch (java.net.URISyntaxException e) {
                         // The stored URL is bad...  ignore it.
                     } catch (IllegalArgumentException e) {
@@ -4392,7 +4406,7 @@ public final class Settings {
 
             Intent intent;
             try {
-                intent = Intent.getIntent(intentUri);
+                intent = Intent.parseUri(intentUri, 0);
             } catch (URISyntaxException e) {
                 return "";
             }

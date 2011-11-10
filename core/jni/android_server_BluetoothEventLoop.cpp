@@ -414,6 +414,7 @@ static void tearDownEventLoop(native_data_t *nat) {
 #define EVENT_LOOP_EXIT 1
 #define EVENT_LOOP_ADD  2
 #define EVENT_LOOP_REMOVE 3
+#define EVENT_LOOP_WAKEUP 4
 
 dbus_bool_t dbusAddWatch(DBusWatch *watch, void *data) {
     native_data_t *nat = (native_data_t *)data;
@@ -456,6 +457,13 @@ void dbusToggleWatch(DBusWatch *watch, void *data) {
     } else {
         dbusRemoveWatch(watch, data);
     }
+}
+
+void dbusWakeup(void *data) {
+    native_data_t *nat = (native_data_t *)data;
+
+    char control = EVENT_LOOP_WAKEUP;
+    write(nat->controlFdW, &control, sizeof(char));
 }
 
 static void handleWatchAdd(native_data_t *nat) {
@@ -541,6 +549,7 @@ static void *eventLoopMain(void *ptr) {
 
     dbus_connection_set_watch_functions(nat->conn, dbusAddWatch,
             dbusRemoveWatch, dbusToggleWatch, ptr, NULL);
+    dbus_connection_set_wakeup_main_function(nat->conn, dbusWakeup, ptr, NULL);
 
     nat->running = true;
 
@@ -574,6 +583,11 @@ static void *eventLoopMain(void *ptr) {
                     case EVENT_LOOP_REMOVE:
                     {
                         handleWatchRemove(nat);
+                        break;
+                    }
+                    case EVENT_LOOP_WAKEUP:
+                    {
+                        // noop
                         break;
                     }
                     }
@@ -723,6 +737,7 @@ static jboolean isEventLoopRunningNative(JNIEnv *env, jobject object) {
 
 #ifdef HAVE_BLUETOOTH
 extern DBusHandlerResult a2dp_event_filter(DBusMessage *msg, JNIEnv *env);
+extern DBusHandlerResult hid_event_filter(DBusMessage *msg, JNIEnv *env);
 
 // Called by dbus during WaitForAndDispatchEventNative()
 static DBusHandlerResult event_filter(DBusConnection *conn, DBusMessage *msg,
@@ -847,9 +862,21 @@ static DBusHandlerResult event_filter(DBusConnection *conn, DBusMessage *msg,
                             method_onDeviceDisconnectRequested,
                             env->NewStringUTF(remote_device_path));
         goto success;
+    } else if (dbus_message_is_signal(msg,
+                                      "org.bluez.Input",
+                                      "PropertyChanged")) {
+        LOGD("Input device receive propertychnaged!!!");
     }
+    if (a2dp_event_filter(msg, env) == DBUS_HANDLER_RESULT_HANDLED) {
+        ret = DBUS_HANDLER_RESULT_HANDLED;
+    } else if (hid_event_filter(msg, env) == DBUS_HANDLER_RESULT_HANDLED) {
+       ret =  DBUS_HANDLER_RESULT_HANDLED;
+    } else {
+       ret = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+     }
 
-    ret = a2dp_event_filter(msg, env);
+
+    //ret = a2dp_event_filter(msg, env);
     env->PopLocalFrame(NULL);
     return ret;
 

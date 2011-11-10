@@ -505,7 +505,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                 return;
             }
             try {
-                performHapticFeedbackLw(null, HapticFeedbackConstants.LONG_PRESS, false);
                 IActivityManager mgr = ActivityManagerNative.getDefault();
                 List<RunningAppProcessInfo> apps = mgr.getRunningAppProcesses();
                 for (RunningAppProcessInfo appInfo : apps) {
@@ -515,7 +514,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                         && appInfo.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
                         // Kill the entire pid
                         Toast.makeText(mContext, R.string.app_killed_message, Toast.LENGTH_SHORT).show();
-                        Process.killProcess(appInfo.pid);
+                        if (appInfo.pkgList!=null && (apps.size() > 0)){
+                                mgr.forceStopPackage(appInfo.pkgList[0]);
+                        }else{
+                                Process.killProcess(appInfo.pid);
+                        }
                         break;
                     }
                 }

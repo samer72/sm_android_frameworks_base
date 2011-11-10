@@ -39,6 +39,7 @@ import android.os.*;
 import android.provider.Contacts.People;
 import android.provider.Settings;
 import android.server.BluetoothA2dpService;
+import android.server.BluetoothHidService;
 import android.server.BluetoothService;
 import android.server.search.SearchManagerService;
 import android.util.EventLog;
@@ -70,6 +71,19 @@ class ServerThread extends Thread {
         }
     }
 
+    private class CompcacheSettingsObserver extends ContentObserver {
+        public CompcacheSettingsObserver() {
+            super(null);
+        }
+        @Override
+        public void onChange(boolean selfChange) {
+            boolean enableCompcache = (Settings.Secure.getInt(mContentResolver,
+                Settings.Secure.COMPCACHE_ENABLED, 0) > 0);
+            // setting this secure property will start or stop compcache
+           SystemProperties.set("persist.service.compcache.enable", enableCompcache ? "1" : "0");
+        }
+    }
+
     @Override
     public void run() {
         EventLog.writeEvent(EventLogTags.BOOT_PROGRESS_SYSTEM_RUN,
@@ -95,6 +109,7 @@ class ServerThread extends Thread {
         WindowManagerService wm = null;
         BluetoothService bluetooth = null;
         BluetoothA2dpService bluetoothA2dp = null;
+	BluetoothHidService bluetoothHid = null;
         HeadsetObserver headset = null;
         DockObserver dock = null;
         UiModeManagerService uiMode = null;
@@ -194,6 +209,9 @@ class ServerThread extends Thread {
                 bluetoothA2dp = new BluetoothA2dpService(context, bluetooth);
                 ServiceManager.addService(BluetoothA2dpService.BLUETOOTH_A2DP_SERVICE,
                                           bluetoothA2dp);
+                bluetoothHid = new BluetoothHidService(context, bluetooth);
+                ServiceManager.addService(BluetoothHidService.BLUETOOTH_HID_SERVICE,
+                                          bluetoothHid);
 
                 int bluetoothOn = Settings.Secure.getInt(mContentResolver,
                     Settings.Secure.BLUETOOTH_ON, 0);
@@ -437,6 +455,9 @@ class ServerThread extends Thread {
         // register observer to listen for settings changes
         mContentResolver.registerContentObserver(Settings.Secure.getUriFor(Settings.Secure.ADB_ENABLED),
                 false, new AdbSettingsObserver());
+
+	mContentResolver.registerContentObserver(Settings.Secure.getUriFor(Settings.Secure.COMPCACHE_ENABLED),
+                false, new CompcacheSettingsObserver());
 
         // Before things start rolling, be sure we have decided whether
         // we are in safe mode.

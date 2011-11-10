@@ -194,8 +194,6 @@ public final class WebIconDatabase {
     /**
      * Open a the icon database and store the icons in the given path.
      * @param path The directory path where the icon database will be stored.
-     * @return True if the database was successfully opened or created in
-     *         the given path.
      */
     public void open(String path) {
         if (path != null) {

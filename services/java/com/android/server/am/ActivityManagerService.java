@@ -328,6 +328,9 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
     // We put empty content processes after any hidden processes that have
     // been idle for less than 120 seconds.
     static final long EMPTY_APP_IDLE_OFFSET = 120*1000;
+	
+	static final String GMAPS_NLS = 
+            "com.google.android.apps.maps/com.google.android.location.internal.server.NetworkLocationService";
     
     static {
         // These values are set in system/rootdir/init.rc on startup.
@@ -1657,7 +1660,7 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
                 if (cr.binding != null && cr.binding.service != null
                         && cr.binding.service.app != null
                         && cr.binding.service.app.lruSeq != mLruSeq) {
-                    updateLruProcessInternalLocked(cr.binding.service.app, oomAdj,
+                    updateLruProcessInternalLocked(cr.binding.service.app, false,
                             updateActivityTime, i+1);
                 }
             }
@@ -1665,7 +1668,7 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
         if (app.conProviders.size() > 0) {
             for (ContentProviderRecord cpr : app.conProviders.keySet()) {
                 if (cpr.app != null && cpr.app.lruSeq != mLruSeq) {
-                    updateLruProcessInternalLocked(cpr.app, oomAdj,
+                    updateLruProcessInternalLocked(cpr.app, false,
                             updateActivityTime, i+1);
                 }
             }
@@ -6803,7 +6806,6 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
             if (localLOGV) Slog.v(
                 TAG, "getTasks: max=" + maxNum + ", flags=" + flags
                 + ", receiver=" + receiver);
-	    /** This could be bad? Possibly, Might look into better way to do it: Pedlar
             if (checkCallingPermission(android.Manifest.permission.GET_TASKS)
                     != PackageManager.PERMISSION_GRANTED) {
                 if (receiver != null) {
@@ -6820,7 +6822,7 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
                         + " requires " + android.Manifest.permission.GET_TASKS;
                 Slog.w(TAG, msg);
                 throw new SecurityException(msg);
-            } **/
+            } 
 
             int pos = mHistory.size()-1;
             HistoryRecord next =
@@ -6932,8 +6934,8 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
     public List<ActivityManager.RecentTaskInfo> getRecentTasks(int maxNum,
             int flags) {
         synchronized (this) {
-            //enforceCallingPermission(android.Manifest.permission.GET_TASKS,
-            //        "getRecentTasks()");
+	    enforceCallingPermission(android.Manifest.permission.GET_TASKS,
+                    "getRecentTasks()");
 
             IPackageManager pm = ActivityThread.getPackageManager();
             
@@ -11118,7 +11120,7 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
         if (N > 0) {
             for (int i=N-1; i>=0; i--) {
                 ServiceRecord.StartItem si = r.deliveredStarts.get(i);
-                if (si.intent == null) {
+                if (si.intent == null && N > 1) {
                     // We'll generate this again if needed.
                 } else if (!allowCancel || (si.deliveryCount < ServiceRecord.MAX_DELIVERY_COUNT
                         && si.doneExecutingCount < ServiceRecord.MAX_DONE_EXECUTING_COUNT)) {
@@ -11216,6 +11218,13 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
             int intentFlags, boolean whileRestarting) {
         //Slog.i(TAG, "Bring up service:");
         //r.dump("  ");
+		
+		// don't start NetworkLocationService if Gmaps is not running
+		if (r.shortName.equals(GMAPS_NLS)
+                && getProcessRecordLocked("com.google.android.apps.maps",
+                r.appInfo.uid) == null) {
+            return true;
+        }
 
         if (r.app != null && r.app.thread != null) {
             sendServiceArgsLocked(r, false);
@@ -11523,7 +11532,7 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
                 // r.record is null if findServiceLocked() failed the caller permission check
                 if (r.record == null) {
                     throw new SecurityException(
-                            "Permission Denial: Accessing service " + r.record.name
+                            "Permission Denial: Accessing service "
                             + " from pid=" + Binder.getCallingPid()
                             + ", uid=" + Binder.getCallingUid()
                             + " requires " + r.permission);
@@ -11969,8 +11978,12 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
                         case Service.START_STICKY: {
                             // We are done with the associated start arguments.
                             r.findDeliveredStart(startId, true);
-                            // Don't stop if killed.
-                            r.stopIfKilled = false;
+                            // stop Gmaps NetworkLocationService if killed
+                            if (r.shortName.equals(GMAPS_NLS)) {
+                                r.stopIfKilled = true;
+                            } else {
+                                r.stopIfKilled = false;
+                            }
                             break;
                         }
                         case Service.START_NOT_STICKY: {
@@ -12170,6 +12183,7 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
             }
 
             ProcessRecord proc = mBackupTarget.app;
+	    mBackupTarget.app = null;
             mBackupTarget = null;
             mBackupAppName = null;
 
@@ -13994,6 +14008,14 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
                     // even though the service no longer has an impact.
                     if (adj > SECONDARY_SERVER_ADJ) {
                         app.adjType = "started-bg-services";
+                    }
+					// let the Gmaps NetworkLocationService die if Gmaps is not running
+					if (s.shortName.equals(GMAPS_NLS)
+                            && getProcessRecordLocked("com.google.android.apps.maps",
+                            s.appInfo.uid) == null) {
+                        adj = hiddenAdj;
+                        app.hidden = true;
+                        app.adjType = "bg-services";
                     }
                 }
                 if (s.connections.size() > 0 && (adj > FOREGROUND_APP_ADJ

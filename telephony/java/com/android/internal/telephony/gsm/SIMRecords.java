@@ -93,6 +93,7 @@ public final class SIMRecords extends IccRecords {
     static final int SPN_RULE_SHOW_PLMN = 0x02;
 
     // From TS 51.011 EF[SPDI] section
+    static final int TAG_SPDI = 0xA3;
     static final int TAG_SPDI_PLMN_LIST = 0x80;
 
     // Full Name IEI from TS 24.008
@@ -140,6 +141,25 @@ public final class SIMRecords extends IccRecords {
     private static final int EVENT_SET_MSISDN_DONE = 30;
     private static final int EVENT_SIM_REFRESH = 31;
     private static final int EVENT_GET_CFIS_DONE = 32;
+
+    // Lookup table for carriers known to produce SIMs which incorrectly indicate MNC length.
+
+    private static final String[] MCCMNC_CODES_HAVING_3DIGITS_MNC = {
+        "405025", "405026", "405027", "405028", "405029", "405030", "405031", "405032",
+        "405033", "405034", "405035", "405036", "405037", "405038", "405039", "405040",
+        "405041", "405042", "405043", "405044", "405045", "405046", "405047", "405750",
+        "405751", "405752", "405753", "405754", "405755", "405756", "405799", "405800",
+        "405801", "405802", "405803", "405804", "405805", "405806", "405807", "405808",
+        "405809", "405810", "405811", "405812", "405813", "405814", "405815", "405816",
+        "405817", "405818", "405819", "405820", "405821", "405822", "405823", "405824",
+        "405825", "405826", "405827", "405828", "405829", "405830", "405831", "405832",
+        "405833", "405834", "405835", "405836", "405837", "405838", "405839", "405840",
+        "405841", "405842", "405843", "405844", "405845", "405846", "405847", "405848",
+        "405849", "405850", "405851", "405852", "405853", "405875", "405876", "405877",
+        "405878", "405879", "405880", "405881", "405882", "405883", "405884", "405885",
+        "405886", "405908", "405909", "405910", "405911", "405925", "405926", "405927",
+        "405928", "405929", "405932"
+    };
 
     // ***** Constructor
 
@@ -504,6 +524,17 @@ public final class SIMRecords extends IccRecords {
 
                 Log.d(LOG_TAG, "IMSI: " + imsi.substring(0, 6) + "xxxxxxxxx");
 
+                if (((mncLength == UNKNOWN) || (mncLength == 2)) &&
+                        ((imsi != null) && (imsi.length() >= 6))) {
+                    String mccmncCode = imsi.substring(0, 6);
+                    for (String mccmnc : MCCMNC_CODES_HAVING_3DIGITS_MNC) {
+                        if (mccmnc.equals(mccmncCode)) {
+                            mncLength = 3;
+                            break;
+                        }
+                    }
+                }
+
                 if (mncLength == UNKNOWN) {
                     // the SIM has told us all it knows, but it didn't know the mnc length.
                     // guess using the mcc
@@ -565,13 +596,6 @@ public final class SIMRecords extends IccRecords {
                 break;
             case EVENT_GET_CPHS_MAILBOX_DONE:
             case EVENT_GET_MBDN_DONE:
-                //Resetting the voice mail number and voice mail tag to null
-                //as these should be updated from the data read from EF_MBDN.
-                //If they are not reset, incase of invalid data/exception these
-                //variables are retaining their previous values and are
-                //causing invalid voice mailbox info display to user.
-                voiceMailNum = null;
-                voiceMailTag = null;
                 isRecordLoadResponse = true;
 
                 ar = (AsyncResult)msg.obj;
@@ -755,6 +779,17 @@ public final class SIMRecords extends IccRecords {
                         mncLength = UNKNOWN;
                     }
                 } finally {
+                    if (((mncLength == UNINITIALIZED) || (mncLength == UNKNOWN) ||
+                            (mncLength == 2)) && ((imsi != null) && (imsi.length() >= 6))) {
+                        String mccmncCode = imsi.substring(0, 6);
+                        for (String mccmnc : MCCMNC_CODES_HAVING_3DIGITS_MNC) {
+                            if (mccmnc.equals(mccmncCode)) {
+                                mncLength = 3;
+                                break;
+                            }
+                        }
+                    }
+
                     if (mncLength == UNKNOWN || mncLength == UNINITIALIZED) {
                         if (imsi != null) {
                             try {
@@ -1439,8 +1474,12 @@ public final class SIMRecords extends IccRecords {
 
         byte[] plmnEntries = null;
 
-        // There should only be one TAG_SPDI_PLMN_LIST
         for ( ; tlv.isValidObject() ; tlv.nextObject()) {
+            // Skip SPDI tag, if existant
+            if (tlv.getTag() == TAG_SPDI) {
+              tlv = new SimTlv(tlv.getData(), 0, tlv.getData().length);
+            }
+            // There should only be one TAG_SPDI_PLMN_LIST
             if (tlv.getTag() == TAG_SPDI_PLMN_LIST) {
                 plmnEntries = tlv.getData();
                 break;

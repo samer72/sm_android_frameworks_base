@@ -999,7 +999,7 @@ public class BluetoothService extends IBluetooth.Stub {
             mHandler.removeMessages(MESSAGE_DISCOVERABLE_TIMEOUT);
             pairable = true;
             discoverable = true;
-            if (duration != 0) {
+            if(duration !=0) {
                 Message msg = mHandler.obtainMessage(MESSAGE_DISCOVERABLE_TIMEOUT);
                 mHandler.sendMessageDelayed(msg, duration * 1000);
                 if (DBG) Log.d(TAG, "BT Discoverable for " + duration + " seconds");
@@ -1728,7 +1728,7 @@ public class BluetoothService extends IBluetooth.Stub {
                         mContext.getSharedPreferences(SHARED_PREFERENCES_NAME,
                                 mContext.MODE_PRIVATE).edit();
                     editor.putBoolean(SHARED_PREFERENCE_DOCK_ADDRESS + mDockAddress, true);
-                    editor.apply();
+                    editor.commit();
                 }
             }
         }

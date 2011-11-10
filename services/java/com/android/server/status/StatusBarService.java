@@ -33,7 +33,9 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.database.ContentObserver;
+import android.graphics.drawable.StateListDrawable;
 import android.graphics.PixelFormat;
+import android.graphics.PorterDuff.Mode;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.location.LocationManager;
@@ -83,9 +85,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
 import java.lang.reflect.Field;
-
-import android.graphics.PorterDuff.Mode;
-import android.graphics.drawable.StateListDrawable;
 
 import com.android.server.status.widget.PowerButton;
 import com.android.server.status.widget.GPSButton;
@@ -294,13 +293,13 @@ public class StatusBarService extends IStatusBar.Stub
     Drawable expBarHeadDrawable;
     Drawable expBarNotifTitleDrawable;
     
-    
     // for disabling the status bar
     ArrayList<DisableRecord> mDisableRecords = new ArrayList<DisableRecord>();
     int mDisabled = 0;
 
-    private HashMap<String,PowerButton> mUsedPowerButtons = new HashMap<String,PowerButton>();
     private boolean mHideOnPowerButtonChange = false;
+
+    private HashMap<String,PowerButton> mUsedPowerButtons = new HashMap<String,PowerButton>();
 
     boolean mNotificationScreenLighter;
     int mNotificationScreenLighterTime;
@@ -362,15 +361,13 @@ public class StatusBarService extends IStatusBar.Stub
         }
         mStatusBarView = sb;
         mDateView = (DateView)sb.findViewById(R.id.date);
-       
         if (custNotBar) {
             mStatusBarView.setBackgroundDrawable(res.getDrawable(com.android.internal.R.drawable.statusbar_background_sq,
-                                                                 notifBarColorMask, notifPDMode));
+            		notifBarColorMask, notifPDMode));
             mDateView.setBackgroundDrawable(res.getDrawable(com.android.internal.R.drawable.statusbar_background_sq,
-                                                            notifBarColorMask, notifPDMode));
+            		notifBarColorMask, notifPDMode));
             mDateView.setPadding(6, 0, 6, 0);
         }
-        
         mStatusIcons = (LinearLayout)sb.findViewById(R.id.statusIcons);
         mNotificationIcons = (IconMerger)sb.findViewById(R.id.notificationIcons);
         mNotificationIcons.service = this;
@@ -399,10 +396,9 @@ public class StatusBarService extends IStatusBar.Stub
         mRewindIcon = (ImageButton) expanded.findViewById(R.id.music_control_previous);
         mForwardIcon = (ImageButton) expanded.findViewById(R.id.music_control_next);
         mStatusbarMusicControls = (LinearLayout) expanded.findViewById(R.id.exp_music_control);
-
         if (custExpBar) {
             mExpandedView.findViewById(R.id.exp_view_lin_layout).
-                setBackgroundDrawable(expBarHeadDrawable);
+            		setBackgroundDrawable(expBarHeadDrawable);
             mNoNotificationsTitle.setBackgroundDrawable(expBarNotifTitleDrawable);
             mOngoingTitle.setBackgroundDrawable(expBarNotifTitleDrawable);
             mLatestTitle.setBackgroundDrawable(expBarNotifTitleDrawable);
@@ -1404,14 +1400,14 @@ public class StatusBarService extends IStatusBar.Stub
                 // us to retract.  Animate back to the expanded position.
                 mAnimAccel = 2000.0f;
                 if (vel < 0) {
-                    mAnimVel = 0;
+		    mAnimVel *= -1;
                 }
             }
             else {
                 // We are expanded and are now going to animate away.
                 mAnimAccel = -2000.0f;
                 if (vel > 0) {
-                    mAnimVel = 0;
+                    mAnimVel *= -1;
                 }
             }
         } else {
@@ -1422,7 +1418,7 @@ public class StatusBarService extends IStatusBar.Stub
                 // expand.  Animate in the notifications.
                 mAnimAccel = 2000.0f;
                 if (vel < 0) {
-                    mAnimVel = 0;
+                    mAnimVel *= -1;
                 }
             }
             else {
@@ -1430,7 +1426,7 @@ public class StatusBarService extends IStatusBar.Stub
                 // us to retract.  Animate back to the collapsed position.
                 mAnimAccel = -2000.0f;
                 if (vel > 0) {
-                    mAnimVel = 0;
+                    mAnimVel *= -1;
                 }
             }
         }
@@ -2072,12 +2068,12 @@ public class StatusBarService extends IStatusBar.Stub
         public void onClick(View v) {
             LinearLayout layout = (LinearLayout)v;
             String type = (String)layout.getTag();
+            if(mHideOnPowerButtonChange) {
+                 deactivate();
+            }
             PowerButton btn = mUsedPowerButtons.get(type);
             btn.toggleState(mContext);
             updateWidget();
-            if(mHideOnPowerButtonChange) {
-                deactivate();
-            }
         }
     };
 

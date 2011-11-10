@@ -706,10 +706,16 @@ public class TextUtils {
         public  CharSequence createFromParcel(Parcel p) {
             int kind = p.readInt();
 
-            if (kind == 1)
-                return p.readString();
+            String string = p.readString();
+            if (string == null) {
+                return null;
+            }
 
-            SpannableString sp = new SpannableString(p.readString());
+            if (kind == 1) {
+                return string;
+            }
+
+            SpannableString sp = new SpannableString(string);
 
             while (true) {
                 kind = p.readInt();
@@ -920,10 +926,10 @@ public class TextUtils {
     }
 
     public static int getOffsetBefore(CharSequence text, int offset) {
-        if (offset == 0)
+        if (offset <= 1)
             return 0;
-        if (offset == 1)
-            return 0;
+        if (offset > text.length())
+            return text.length();
 
         char c = text.charAt(offset - 1);
 
@@ -971,10 +977,10 @@ public class TextUtils {
     public static int getOffsetAfter(CharSequence text, int offset) {
         int len = text.length();
 
-        if (offset == len)
+        if (offset >= len-1)
             return len;
-        if (offset == len - 1)
-            return len;
+        if (offset < 0)
+            return 0;
 
         char c = text.charAt(offset);
 

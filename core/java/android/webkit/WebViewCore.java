@@ -58,7 +58,11 @@ final class WebViewCore {
         // Load libwebcore during static initialization. This happens in the
         // zygote process so it will be shared read-only across all app
         // processes.
-        System.loadLibrary("webcore");
+        try {
+            System.loadLibrary("webcore");
+        } catch (UnsatisfiedLinkError e) {
+            Log.e(LOGTAG, "Unable to load webcore library");
+        }
     }
 
     /*
@@ -1879,9 +1883,11 @@ final class WebViewCore {
     /* package */ void contentDraw() {
         // don't update the Picture until we have an initial width and finish
         // the first layout
+
         if (mCurrentViewWidth == 0 || !mBrowserFrame.firstLayoutDone()) {
             return;
-        }
+	}
+
         // only fire an event if this is our first request
         synchronized (this) {
             if (mDrawIsScheduled) return;

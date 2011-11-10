@@ -384,7 +384,7 @@ public class GestureDetector {
         mIgnoreMultitouch = ignoreMultitouch;
 
         // Fallback to support pre-donuts releases
-        int touchSlop, doubleTapSlop;
+	int touchSlop, doubleTapSlop;
         if (context == null) {
             //noinspection deprecation
             touchSlop = ViewConfiguration.getTouchSlop();
@@ -534,7 +534,7 @@ public class GestureDetector {
                     mHandler.removeMessages(SHOW_PRESS);
                     mHandler.removeMessages(LONG_PRESS);
                 }
-                if (distance > mBiggerTouchSlopSquare) {
+		if (distance > mBiggerTouchSlopSquare) {
                     mAlwaysInBiggerTapRegion = false;
                 }
             } else if ((Math.abs(scrollX) >= 1) || (Math.abs(scrollY) >= 1)) {

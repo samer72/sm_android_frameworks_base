@@ -157,6 +157,7 @@ extern int register_android_bluetooth_ScoSocket(JNIEnv *env);
 extern int register_android_server_BluetoothService(JNIEnv* env);
 extern int register_android_server_BluetoothEventLoop(JNIEnv *env);
 extern int register_android_server_BluetoothA2dpService(JNIEnv* env);
+extern int register_android_server_BluetoothHidService(JNIEnv* env);
 extern int register_android_server_Watchdog(JNIEnv* env);
 extern int register_android_ddm_DdmHandleNativeHeap(JNIEnv *env);
 extern int register_com_android_internal_os_ZygoteInit(JNIEnv* env);
@@ -612,7 +613,7 @@ int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv)
     strcpy(heapsizeOptsBuf, "-Xmx");
     property_get("persist.sys.vm.heapsize", propBuf, "");
     if (strcmp(propBuf, "") == 0) {
-        property_get("dalvik.vm.heapsize", propBuf, "16m");
+        property_get("dalvik.vm.heapsize", propBuf, "32m");
     }
     strcpy(heapsizeOptsBuf+4, propBuf);
     LOGI("Heap size: %s", heapsizeOptsBuf);
@@ -1291,6 +1292,7 @@ static const RegJNIRec gRegJNI[] = {
     REG_JNI(register_android_server_BluetoothService),
     REG_JNI(register_android_server_BluetoothEventLoop),
     REG_JNI(register_android_server_BluetoothA2dpService),
+    REG_JNI(register_android_server_BluetoothHidService),
     REG_JNI(register_android_server_Watchdog),
     REG_JNI(register_android_message_digest_sha1),
     REG_JNI(register_android_ddm_DdmHandleNativeHeap),

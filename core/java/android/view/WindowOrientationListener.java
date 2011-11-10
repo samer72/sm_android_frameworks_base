@@ -324,7 +324,7 @@ public abstract class WindowOrientationListener {
                 return;
             }
 
-            boolean allowed = rotation == ROTATION_0;
+	    boolean allowed = rotation == ROTATION_0;
             if (!allowed) {
                switch (rotation) {
                   case ROTATION_90:

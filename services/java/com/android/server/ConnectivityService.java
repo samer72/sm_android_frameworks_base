@@ -33,6 +33,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.os.INetworkManagementService;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemProperties;
@@ -94,6 +95,8 @@ public class ConnectivityService extends IConnectivityManager.Stub {
 
     private boolean mTestMode;
     private static ConnectivityService sServiceInstance;
+
+    private INetworkManagementService mNetd;
 
     private Handler mHandler;
 
@@ -477,7 +480,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
     private class FeatureUser implements IBinder.DeathRecipient {
         int mNetworkType;
         String mFeature;
-        IBinder mBinder;
+        final IBinder mBinder;
         int mPid;
         int mUid;
         long mCreateTime;
@@ -827,8 +830,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         int numConnectedNets = 0;
 
         for (NetworkStateTracker nt : mNetTrackers) {
-            if (nt != null && nt.getNetworkInfo().isConnected() &&
-                    !nt.isTeardownRequested()) {
+            if (nt != null && nt.getNetworkInfo().isConnected() && !nt.isTeardownRequested()) {
                 ++numConnectedNets;
             }
         }
@@ -1095,6 +1097,9 @@ public class ConnectivityService extends IConnectivityManager.Stub {
     }
 
     void systemReady() {
+        IBinder b = ServiceManager.getService(Context.NETWORKMANAGEMENT_SERVICE);
+        mNetd = INetworkManagementService.Stub.asInterface(b);
+
         synchronized(this) {
             mSystemReady = true;
             if (mInitialBroadcast != null) {
@@ -1220,8 +1225,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
                 continue;
             }
             NetworkStateTracker nt = mNetTrackers[i];
-            if (nt.getNetworkInfo().isConnected() &&
-                    !nt.isTeardownRequested()) {
+            if (nt.getNetworkInfo().isConnected() && !nt.isTeardownRequested()) {
                 List pids = mNetRequestersPids[i];
                 for (int j=0; j<pids.size(); j++) {
                     Integer pid = (Integer)pids.get(j);
@@ -1278,8 +1282,7 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         for (int x = mPriorityList.length-1; x>= 0; x--) {
             int netType = mPriorityList[x];
             NetworkStateTracker nt = mNetTrackers[netType];
-            if (nt != null && nt.getNetworkInfo().isConnected() &&
-                    !nt.isTeardownRequested()) {
+            if (nt != null && nt.getNetworkInfo().isConnected() && !nt.isTeardownRequested()) {
                 String[] dnsList = nt.getNameServers();
                 if (mNetAttributes[netType].isDefault()) {
                     int j = 1;

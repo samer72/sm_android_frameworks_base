@@ -535,9 +535,8 @@ public class WindowManagerService extends IWindowManager.Stub
                 } catch (InterruptedException e) {
                 }
             }
+	    return thr.mService;
         }
-
-        return thr.mService;
     }
 
     static class WMThread extends Thread {
@@ -952,6 +951,10 @@ public class WindowManagerService extends IWindowManager.Stub
                         && w.mAttrs.type == WindowManager.LayoutParams.TYPE_APPLICATION_STARTING
                         && i > 0) {
                     WindowState wb = (WindowState)localmWindows.get(i-1);
+		    while (i > 1 && wb.mAppToken == w.mAppToken && !canBeImeTarget(wb)) {
+                        i--;
+                        wb = (WindowState)localmWindows.get(i-1);
+                    }
                     if (wb.mAppToken == w.mAppToken && canBeImeTarget(wb)) {
                         i--;
                         w = wb;

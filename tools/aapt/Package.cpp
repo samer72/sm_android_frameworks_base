@@ -26,7 +26,7 @@ static const char* kNoCompressExt[] = {
     ".jpg", ".jpeg", ".png", ".gif",
     ".wav", ".mp2", ".mp3", ".ogg", ".aac",
     ".mpg", ".mpeg", ".mid", ".midi", ".smf", ".jet",
-    ".rtttl", ".imy", ".xmf", ".mp4", ".m4a",
+    ".rtttl", ".imy", ".xmf", ".mxmf", ".mp4", ".m4a",
     ".m4v", ".3gp", ".3gpp", ".3g2", ".3gpp2",
     ".amr", ".awb", ".wma", ".wmv"
 };
@@ -50,6 +50,11 @@ ssize_t processJarFiles(Bundle* bundle, ZipFile* zip);
 status_t writeAPK(Bundle* bundle, const sp<AaptAssets>& assets,
                        const String8& outputFile)
 {
+    #if BENCHMARK
+    fprintf(stdout, "BENCHMARK: Starting APK Bundling \n");
+    long startAPKTime = clock();
+    #endif /* BENCHMARK */
+
     status_t result = NO_ERROR;
     ZipFile* zip = NULL;
     int count;
@@ -187,6 +192,10 @@ bail:
 
     if (result == NO_ERROR && bundle->getVerbose())
         printf("Done!\n");
+
+    #if BENCHMARK
+    fprintf(stdout, "BENCHMARK: End APK Bundling. Time Elapsed: %f ms \n",(clock() - startAPKTime)/1000.0);
+    #endif /* BENCHMARK */
     return result;
 }
 
